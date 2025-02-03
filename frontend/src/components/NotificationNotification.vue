@@ -16,7 +16,6 @@
         </v-card-title >        
 
         <v-card-text style="background-color: white;">
-            <String v-if="editMode" label="NotificationId" v-model="value.notificationId" :editMode="editMode" :inputUI="''"/>
             <String label="UserId" v-model="value.userId" :editMode="editMode" :inputUI="''"/>
             <String label="TaskId" v-model="value.taskId" :editMode="editMode" :inputUI="''"/>
             <Date label="DueDate" v-model="value.dueDate" :editMode="editMode" :inputUI="''"/>
@@ -137,6 +136,7 @@
 
                     if(!this.offline) {
                         if(this.isNew) {
+                            this.value.notificationId = crypto.randomUUID()
                             temp = await axios.post(axios.fixUrl('/notifications'), this.value)
                         } else {
                             temp = await axios.put(axios.fixUrl(this.value._links.self.href), this.value)

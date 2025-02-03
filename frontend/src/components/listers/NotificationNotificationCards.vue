@@ -107,7 +107,7 @@
                 'notificationId': '',
                 'userId': '',
                 'taskId': '',
-                'dueDate': '2025-02-03',
+                'dueDate': new Date().toISOString(),
             }
         },
         methods:{

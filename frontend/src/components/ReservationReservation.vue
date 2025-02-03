@@ -16,7 +16,6 @@
         </v-card-title >        
 
         <v-card-text style="background-color: white;">
-            <String v-if="editMode" label="TaskId" v-model="value.taskId" :editMode="editMode" :inputUI="''"/>
             <String label="UserId" v-model="value.userId" :editMode="editMode" :inputUI="''"/>
             <String label="Title" v-model="value.title" :editMode="editMode" :inputUI="''"/>
             <String label="Description" v-model="value.description" :editMode="editMode" :inputUI="''"/>
@@ -111,6 +110,7 @@
                 status: false,
                 timeout: 5000,
                 text: '',
+                color: ''
             },
         }),
 	async created() {
@@ -152,14 +152,25 @@
 
                     if(!this.offline) {
                         if(this.isNew) {
-                            temp = await axios.post(axios.fixUrl('/reservations'), this.value)
+                            this.value.taskId = crypto.randomUUID()
+                            temp = await axios.post(axios.fixUrl('/reservations'), this.value);
+                            
+                            const notificationData = {
+                                notificationId: crypto.randomUUID(),
+                                userId: this.value.userId,
+                                taskId: this.value.taskId,
+                                dueDate: this.value.dueDate
+                            };
+                            await axios.post(axios.fixUrl('/notifications'), notificationData);
                         } else {
-                            temp = await axios.put(axios.fixUrl(this.value._links.self.href), this.value)
+                            temp = await axios.put(axios.fixUrl(this.value._links.self.href), this.value);
                         }
                     }
 
                     if(this.value!=null) {
-                        for(var k in temp.data) this.value[k]=temp.data[k];
+                        for(var k in temp.data) {
+                            this.value[k] = temp.data[k];
+                        }
                     } else {
                         this.value = temp.data;
                     }
@@ -173,17 +184,23 @@
                         this.$emit('edit', this.value);
                     }
 
-                    location.reload()
+                    this.snackbar.status = true;
+                    this.snackbar.text = '성공적으로 저장되었습니다.';
+                    this.snackbar.color = 'success';
+
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
 
                 } catch(e) {
-                    this.snackbar.status = true
+                    this.snackbar.status = true;
+                    this.snackbar.color = 'error';
                     if(e.response && e.response.data.message) {
-                        this.snackbar.text = e.response.data.message
+                        this.snackbar.text = e.response.data.message;
                     } else {
-                        this.snackbar.text = e
+                        this.snackbar.text = '저장 중 오류가 발생했습니다.';
                     }
                 }
-                
             },
             async remove(){
                 try {
