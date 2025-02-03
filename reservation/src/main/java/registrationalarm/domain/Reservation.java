@@ -23,6 +23,8 @@ public class Reservation {
 
     private String userId;
 
+    private String notificationId;
+
     private String title;
 
     private String description;

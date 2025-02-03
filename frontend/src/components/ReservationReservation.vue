@@ -46,21 +46,7 @@
                     text
                     @click="save"
                 >
-                    CreateReservation
-                </v-btn>
-                <v-btn
-                    color="primary"
-                    text
-                    @click="save"
-                >
-                    UpdateReservation
-                </v-btn>
-                <v-btn
-                    color="primary"
-                    text
-                    @click="save"
-                >
-                    DeleteReservation
+                    등록
                 </v-btn>
                 <v-btn
                     color="primary"
@@ -153,18 +139,18 @@
                     if(!this.offline) {
                         if(this.isNew) {
                             this.value.taskId = crypto.randomUUID()
+                            this.value.notificationId = crypto.randomUUID()
                             temp = await axios.post(axios.fixUrl('/reservations'), this.value);
                             
-                            const notificationData = {
-                                notificationId: crypto.randomUUID(),
-                                userId: this.value.userId,
-                                taskId: this.value.taskId,
-                                dueDate: this.value.dueDate
-                            };
-                            await axios.post(axios.fixUrl('/notifications'), notificationData);
                         } else {
                             temp = await axios.put(axios.fixUrl(this.value._links.self.href), this.value);
                         }
+                        const notificationData = {
+                            notificationId: this.value.notificationId,
+                            userId: this.value.userId,
+                            dueDate: this.value.dueDate
+                        };
+                        await axios.post(axios.fixUrl('/notifications'), notificationData);
                     }
 
                     if(this.value!=null) {
@@ -184,22 +170,22 @@
                         this.$emit('edit', this.value);
                     }
 
-                    this.snackbar.status = true;
                     this.snackbar.text = '성공적으로 저장되었습니다.';
                     this.snackbar.color = 'success';
+                    this.snackbar.status = true;
 
                     setTimeout(() => {
                         location.reload();
                     }, 1000);
 
                 } catch(e) {
-                    this.snackbar.status = true;
                     this.snackbar.color = 'error';
                     if(e.response && e.response.data.message) {
                         this.snackbar.text = e.response.data.message;
                     } else {
                         this.snackbar.text = '저장 중 오류가 발생했습니다.';
                     }
+                    this.snackbar.status = true;
                 }
             },
             async remove(){

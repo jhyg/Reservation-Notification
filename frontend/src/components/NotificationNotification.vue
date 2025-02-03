@@ -17,7 +17,6 @@
 
         <v-card-text style="background-color: white;">
             <String label="UserId" v-model="value.userId" :editMode="editMode" :inputUI="''"/>
-            <String label="TaskId" v-model="value.taskId" :editMode="editMode" :inputUI="''"/>
             <Date label="DueDate" v-model="value.dueDate" :editMode="editMode" :inputUI="''"/>
         </v-card-text>
 
