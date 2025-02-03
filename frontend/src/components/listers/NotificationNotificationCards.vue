@@ -107,6 +107,7 @@
                 'notificationId': '',
                 'userId': '',
                 'taskId': '',
+                'dueDate': '2025-02-03',
             }
         },
         methods:{

@@ -22,6 +22,8 @@ public class Notification {
 
     private String taskId;
 
+    private Date dueDate;
+
     public static NotificationRepository repository() {
         NotificationRepository notificationRepository = NotificationApplication.applicationContext.getBean(
             NotificationRepository.class

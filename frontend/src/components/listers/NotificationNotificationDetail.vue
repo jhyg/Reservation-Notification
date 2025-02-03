@@ -14,6 +14,9 @@
             <div>
                 <String label="TaskId" v-model="item.taskId" :editMode="editMode" @change="change" />
             </div>
+            <div>
+                <Date label="DueDate" v-model="item.dueDate" :editMode="editMode" @change="change" />
+            </div>
         </v-card-text>
 
         <v-card-actions>

@@ -69,6 +69,7 @@
                     { text: "notificationId", value: "notificationId" },
                     { text: "userId", value: "userId" },
                     { text: "taskId", value: "taskId" },
+                    { text: "dueDate", value: "dueDate" },
                 ],
             notification : [],
             newValue: {},
@@ -89,6 +90,7 @@
                 'notificationId': '',
                 'userId': '',
                 'taskId': '',
+                'dueDate': '2025-02-03',
             }
         },
         methods: {

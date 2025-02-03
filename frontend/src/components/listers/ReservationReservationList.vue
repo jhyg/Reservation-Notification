@@ -124,7 +124,7 @@
                 'userId': '',
                 'title': '',
                 'description': '',
-                'dueDate': '2025-01-23',
+                'dueDate': '2025-02-03',
             }
         },
         methods: {

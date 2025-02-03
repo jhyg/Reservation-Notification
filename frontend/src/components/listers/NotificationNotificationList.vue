@@ -43,12 +43,14 @@
                             
                             
                             
+                            
                         </v-list-item-title>
 
                         <v-list-item-subtitle style="font-size:25px; font-weight:700;">
                             [ NotificationId :  {{data.notificationId }} ] &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                             [ UserId :  {{data.userId }} ] &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                             [ TaskId :  {{data.taskId }} ] &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                            [ DueDate :  {{data.dueDate }} ] &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                         </v-list-item-subtitle>
 
                     </v-list-item-content>
@@ -119,6 +121,7 @@
                 'notificationId': '',
                 'userId': '',
                 'taskId': '',
+                'dueDate': '2025-02-03',
             }
         },
         methods: {

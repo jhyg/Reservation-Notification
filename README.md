@@ -37,7 +37,7 @@ mvn spring-boot:run
 ```
 - notification
 ```
- http :8088/notifications notificationId="notificationId"userId="userId"taskId="taskId"
+ http :8088/notifications notificationId="notificationId"userId="userId"taskId="taskId"dueDate="dueDate"
 ```
 
 
