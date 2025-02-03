@@ -35,37 +35,6 @@
                         <v-icon>mdi-close</v-icon>
                     </v-btn>
                 </v-dialog>
-
-                <v-row>
-                    <v-card
-                        class="mx-auto"
-                        style="height:300px; width:300px; margin-bottom:20px; text-align: center;"
-                        outlined
-                    >
-                        <v-list-item>
-                            <v-list-item-avatar 
-                                class="mx-auto"
-                                size="80"
-                                style="margin-top:80px;"
-                            ><v-icon color="primary" x-large>mdi-plus</v-icon>
-                            </v-list-item-avatar>
-                        </v-list-item>
-
-                        <v-card-actions>
-                            <v-btn 
-                                v-on="on"
-                                class="mx-auto"
-                                outlined
-                                rounded
-                                @click="openDialog=true;"
-                                color="primary"
-                                style="font-weight:500; font-size:20px; padding:15px; border:solid 2px; max-width:250px; overflow:hidden"
-                            >
-                                Notification 등록
-                            </v-btn>
-                        </v-card-actions>
-                    </v-card>
-                </v-row>
             </div>
         </v-col>
         <v-row>

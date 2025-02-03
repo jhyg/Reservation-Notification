@@ -20,6 +20,8 @@ public class Notification {
     private String notificationId;
 
     private String userId;
+    
+    private String taskId;
 
     @JsonProperty("dueDate")
     private Date dueDate;

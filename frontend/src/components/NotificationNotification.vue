@@ -26,13 +26,6 @@
                 <v-btn
                     color="primary"
                     text
-                    @click="edit"
-                >
-                    수정
-                </v-btn>
-                <v-btn
-                    color="primary"
-                    text
                     @click="remove"
                 >
                     삭제

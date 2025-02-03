@@ -139,7 +139,7 @@
                     if(!this.offline) {
                         if(this.isNew) {
                             this.value.taskId = crypto.randomUUID()
-                            this.value.notificationId = crypto.randomUUID()
+                            this.value.notificationId = this.value.taskId
                             temp = await axios.post(axios.fixUrl('/reservations'), this.value);
                             
                         } else {
@@ -147,6 +147,7 @@
                         }
                         const notificationData = {
                             notificationId: this.value.notificationId,
+                            taskId: this.value.notificationId,
                             userId: this.value.userId,
                             dueDate: this.value.dueDate
                         };
@@ -192,6 +193,7 @@
                 try {
                     if (!this.offline) {
                         await axios.delete(axios.fixUrl(this.value._links.self.href))
+                        await axios.delete(axios.fixUrl('http://localhost:8083/notifications/' + this.value.notificationId))
                     }
 
                     this.editMode = false;
