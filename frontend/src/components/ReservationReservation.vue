@@ -21,7 +21,7 @@
             <v-switch
                 v-if="editMode"
                 v-model="isNow"
-                :label="isNow ? 'Now' : 'Later'"
+                :label="isNow ? 'Later' : 'Now'"
             ></v-switch>
             <Date v-if="!isNow" label="DueDate" v-model="value.dueDate" :editMode="editMode" :inputUI="''"/>
         </v-card-text>
