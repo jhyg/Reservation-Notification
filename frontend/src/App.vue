@@ -69,8 +69,7 @@ export default {
         const eventSource = new EventSource('/notifications/stream');
         eventSource.addEventListener('time', (event) => {
             const currentTime = event.data;
-            console.log('Current time:', currentTime);
-
+            
             me.currentDate = currentTime.substring(0, 16);
 
             me.notifications.forEach(async function (noti){
