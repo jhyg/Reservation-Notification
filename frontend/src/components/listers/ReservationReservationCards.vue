@@ -23,7 +23,7 @@
                         transition="dialog-bottom-transition"
                 >
                     <ReservationReservation :offline="offline" class="video-card" :isNew="true" :editMode="true" v-model="newValue" 
-                            @add="append" v-if="tick"/>
+                            @add="append" @notiNow="notiNow" v-if="tick"/>
 
                     <v-btn
                             style="postition:absolute; top:2%; right:2%"
@@ -112,6 +112,13 @@
             }
         },
         methods:{
+            notiNow(noti){
+                this.closeDialog()
+                const appComponent = this.$root.$children[0]
+                if (appComponent && appComponent.addNotification) {
+                    appComponent.addNotification(noti, crypto.randomUUID())
+                }
+            },
             closeDialog(){
                 this.openDialog = false
             },

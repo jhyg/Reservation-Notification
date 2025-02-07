@@ -16,10 +16,14 @@
         </v-card-title >        
 
         <v-card-text style="background-color: white;">
-            <String label="UserId" v-model="value.userId" :editMode="editMode" :inputUI="''"/>
             <String label="Title" v-model="value.title" :editMode="editMode" :inputUI="''"/>
             <String label="Description" v-model="value.description" :editMode="editMode" :inputUI="''"/>
-            <Date label="DueDate" v-model="value.dueDate" :editMode="editMode" :inputUI="''"/>
+            <v-switch
+                v-if="editMode"
+                v-model="isNow"
+                :label="isNow ? 'Now' : 'Later'"
+            ></v-switch>
+            <Date v-if="!isNow" label="DueDate" v-model="value.dueDate" :editMode="editMode" :inputUI="''"/>
         </v-card-text>
 
         <v-card-actions style="background-color: white;">
@@ -98,6 +102,7 @@
                 text: '',
                 color: ''
             },
+            isNow: false,
         }),
 	async created() {
         },
@@ -134,50 +139,55 @@
             },
             async save(){
                 try {
-                    var temp = null;
+                    this.value.userId = 'user'
+                    if(this.isNow){
+                        this.$emit('notiNow', this.value)
+                    } else {
+                        var temp = null;
 
-                    if(!this.offline) {
-                        if(this.isNew) {
-                            this.value.taskId = crypto.randomUUID()
-                            this.value.notificationId = this.value.taskId
-                            temp = await axios.post(axios.fixUrl('/reservations'), this.value);
-                            
+                        if(!this.offline) {
+                            if(this.isNew) {
+                                this.value.taskId = crypto.randomUUID()
+                                this.value.notificationId = this.value.taskId
+                                temp = await axios.post(axios.fixUrl('/reservations'), this.value);
+                                
+                            } else {
+                                temp = await axios.put(axios.fixUrl(this.value._links.self.href), this.value);
+                            }
+                            const notificationData = {
+                                notificationId: this.value.notificationId,
+                                taskId: this.value.notificationId,
+                                userId: this.value.userId,
+                                dueDate: this.value.dueDate
+                            };
+                            await axios.post(axios.fixUrl('/notifications'), notificationData);
+                        }
+
+                        if(this.value!=null) {
+                            for(var k in temp.data) {
+                                this.value[k] = temp.data[k];
+                            }
                         } else {
-                            temp = await axios.put(axios.fixUrl(this.value._links.self.href), this.value);
+                            this.value = temp.data;
                         }
-                        const notificationData = {
-                            notificationId: this.value.notificationId,
-                            taskId: this.value.notificationId,
-                            userId: this.value.userId,
-                            dueDate: this.value.dueDate
-                        };
-                        await axios.post(axios.fixUrl('/notifications'), notificationData);
-                    }
 
-                    if(this.value!=null) {
-                        for(var k in temp.data) {
-                            this.value[k] = temp.data[k];
+                        this.editMode = false;
+                        this.$emit('input', this.value);
+
+                        if (this.isNew) {
+                            this.$emit('add', this.value);
+                        } else {
+                            this.$emit('edit', this.value);
                         }
-                    } else {
-                        this.value = temp.data;
+
+                        this.snackbar.text = '성공적으로 저장되었습니다.';
+                        this.snackbar.color = 'success';
+                        this.snackbar.status = true;
+
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1000);
                     }
-
-                    this.editMode = false;
-                    this.$emit('input', this.value);
-
-                    if (this.isNew) {
-                        this.$emit('add', this.value);
-                    } else {
-                        this.$emit('edit', this.value);
-                    }
-
-                    this.snackbar.text = '성공적으로 저장되었습니다.';
-                    this.snackbar.color = 'success';
-                    this.snackbar.status = true;
-
-                    setTimeout(() => {
-                        location.reload();
-                    }, 1000);
 
                 } catch(e) {
                     this.snackbar.color = 'error';

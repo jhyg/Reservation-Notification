@@ -4,9 +4,9 @@
         <div class="notifications-container">
             <transition-group name="slide-notification">
                 <div v-for="(notification, index) in activeNotifications" 
-                     :key="notification.id" 
-                     class="mac-notification"
-                     :style="{ top: `${20 + (index * 100)}px` }">
+                    :key="notification.id" 
+                    class="mac-notification"
+                    :style="{ top: `${20 + (index * 100)}px` }">
                     <div class="notification-header">
                         <v-icon color="white" small>mdi-bell</v-icon>
                         <span class="ml-2">알림</span>
@@ -21,7 +21,10 @@
                         </v-btn>
                     </div>
                     <div class="notification-content">
-                        {{ notification.text }}
+                        <div class="notification-title"><h2>{{ notification.title }}</h2></div>
+                        <div class="notification-description">
+                            {{ truncateText(notification.description) }}
+                        </div>
                     </div>
                 </div>
             </transition-group>
@@ -75,7 +78,7 @@ export default {
                 if (me.currentDate === dueDateObj) {
                     var temp = await axios.get(axios.fixUrl('/reservations/' + noti.taskId))
                     if(temp.data) {
-                        me.addNotification(temp.data.title, noti.taskId);
+                        me.addNotification(temp.data, noti.taskId);
                     }
                 }
             })
@@ -88,6 +91,10 @@ export default {
     },
 
     methods: {
+        truncateText(text) {
+            if (!text) return '';
+            return text.length > 20 ? text.substring(0, 20) + '...' : text;
+        },
         openSideBar(){
             this.sideBar = !this.sideBar
         },
@@ -101,13 +108,14 @@ export default {
         removeNotification(id) {
             this.activeNotifications = this.activeNotifications.filter(n => n.id !== id);
         },
-        addNotification(text, taskId) {
-            const exists = this.activeNotifications.some(n => n.taskId === taskId);
-            if (!exists) {
+        addNotification(noti, taskId) {
+            const existingNotification = this.activeNotifications.find(n => n.taskId === taskId);
+            if (!existingNotification) {
                 this.activeNotifications.push({
                     id: this.notificationCounter++,
-                    text,
-                    taskId
+                    taskId: taskId,
+                    title: noti.title,
+                    description: noti.description
                 });
             }
         }
