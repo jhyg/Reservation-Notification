@@ -4,7 +4,6 @@ import java.util.*;
 import org.springframework.http.ResponseEntity;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,10 +16,10 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ScheduledFuture;
 import java.text.SimpleDateFormat;
+import org.springframework.http.HttpStatus;
 
 @RestController
 @CrossOrigin(origins = "*")
-@Transactional
 public class NotificationController {
 
     @Autowired
@@ -42,24 +41,26 @@ public class NotificationController {
         emitter.onTimeout(() -> {
             System.out.println("SSE timeout");
         });
+        emitter.onError((e) -> {
+            System.out.println("SSE error: " + e.getMessage());
+        });
         
         ScheduledFuture<?> future = scheduler.scheduleAtFixedRate(() -> {
             try {
                 Date now = new Date();
-                // 현재 초가 0~2초 사이일 때만 알림을 보냄
                 if (now.getSeconds() <= 2) {
                     String currentTime = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm")
                         .format(now);
                     emitter.send(SseEmitter.event()
                         .name("time")
-                        .data(currentTime));
+                        .data(currentTime)
+                        .reconnectTime(10000));
                 }
             } catch (IOException e) {
                 emitter.completeWithError(e);
             }
-        }, 0, 1, TimeUnit.SECONDS);  // 1초마다 체크
+        }, 0, 1, TimeUnit.SECONDS);
         
-        // emitter가 완료되면 해당 작업만 취소
         emitter.onCompletion(() -> future.cancel(true));
         emitter.onTimeout(() -> future.cancel(true));
         
@@ -71,7 +72,6 @@ public class NotificationController {
         SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
         emitters.add(emitter);
         
-        // 연결이 종료되면 emitter 제거
         emitter.onCompletion(() -> {
             emitters.remove(emitter);
             System.out.println("Notification subscription completed");
@@ -80,12 +80,16 @@ public class NotificationController {
             emitters.remove(emitter);
             System.out.println("Notification subscription timeout");
         });
+        emitter.onError((e) -> {
+            emitters.remove(emitter);
+            System.out.println("Notification subscription error: " + e.getMessage());
+        });
         
-        // 연결 시 테스트 이벤트 전송
         try {
             emitter.send(SseEmitter.event()
                 .name("connect")
-                .data("Connected to notification stream"));
+                .data("Connected to notification stream")
+                .reconnectTime(10000));
         } catch (IOException e) {
             emitter.completeWithError(e);
         }
@@ -112,9 +116,7 @@ public class NotificationController {
     }
 
     @PostMapping("/notifications/reminder") 
-    public ResponseEntity<Notification> createReminderNotification(@RequestBody Notification notification) {
-        Notification savedNotification = notificationRepository.save(notification);
-        
+    public void createReminderNotification(@RequestBody Notification notification) {
         // 모든 클라이언트에게 새로운 알림 정보 브로드캐스트
         List<SseEmitter> deadEmitters = new ArrayList<>();
         emitters.forEach(emitter -> {
@@ -123,20 +125,13 @@ public class NotificationController {
                     .name("notification")
                     .data(Map.of(
                         "type", "NOTIFICATION_ADDED",
-                        "notification", savedNotification
+                        "notification", notification
                     )));
             } catch (IOException e) {
                 deadEmitters.add(emitter);
             }
         });
         emitters.removeAll(deadEmitters);
-        
-        return ResponseEntity.ok(savedNotification);
     }
-
-    // 현재 연결된 클라이언트 수 확인용 (디버깅/모니터링용)
-    @GetMapping("/notifications/connections")
-    public Map<String, Integer> getConnectionCount() {
-        return Collections.singletonMap("connections", emitters.size());
-    }
+    
 }

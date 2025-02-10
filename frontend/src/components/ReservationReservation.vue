@@ -156,17 +156,20 @@
                                 this.value.taskId = crypto.randomUUID()
                                 this.value.notificationId = this.value.taskId
                                 temp = await axios.post(axios.fixUrl('/reservations'), this.value);
-                                
                             } else {
                                 temp = await axios.put(axios.fixUrl(this.value._links.self.href), this.value);
                             }
+
                             const notificationData = {
                                 notificationId: this.value.notificationId,
                                 taskId: this.value.notificationId,
                                 userId: this.value.userId,
                                 dueDate: this.value.dueDate
                             };
+                            
+                            // REST API로 알림 저장
                             await axios.post(axios.fixUrl('/notifications'), notificationData);
+                            // 실시간으로 모든 클라이언트에 알림
                             await axios.post(axios.fixUrl('/notifications/reminder'), notificationData);
                         }
 
@@ -209,7 +212,15 @@
             async remove(){
                 try {
                     if (!this.offline) {
-                        await axios.delete(axios.fixUrl(this.value._links.self.href))
+                        await axios.delete(axios.fixUrl(this.value._links.self.href));
+                        
+                        // 실시간 알림 브로드캐스트
+                        await axios.post(axios.fixUrl('/notifications/broadcast'), {
+                            type: 'NOTIFICATION_DELETED',
+                            notificationId: this.value.notificationId
+                        });
+                        
+                        // REST API 알림 삭제
                         await axios.delete(axios.fixUrl('http://localhost:8083/notifications/' + this.value.notificationId))
                     }
 

@@ -6,7 +6,7 @@
                 <div v-for="(notification, index) in activeNotifications" 
                     :key="notification.id" 
                     class="mac-notification"
-                    :style="{ top: `${20 + (index * 100)}px` }">
+                    :style="{ top: `${20 + (index * 135)}px` }">
                     <div class="notification-header">
                         <v-icon color="white" small>mdi-bell</v-icon>
                         <span class="ml-2">알림</span>
@@ -71,8 +71,17 @@ export default {
             me.currentDate = currentTime.substring(0, 16);
 
             me.notifications.forEach(async function (noti){
-                const dueDateObj = noti.dueDate.substring(0, 16);
-                if (me.currentDate === dueDateObj) {
+                // ISO 문자열을 Date 객체로 변환하여 비교
+                const currentDateTime = new Date(currentTime);
+                const dueDateTime = new Date(noti.dueDate);
+                
+                // 년, 월, 일, 시, 분이 같은지 비교
+                if (currentDateTime.getFullYear() === dueDateTime.getFullYear() &&
+                    currentDateTime.getMonth() === dueDateTime.getMonth() &&
+                    currentDateTime.getDate() === dueDateTime.getDate() &&
+                    currentDateTime.getHours() === dueDateTime.getHours() &&
+                    currentDateTime.getMinutes() === dueDateTime.getMinutes()) {
+                    
                     var temp = await axios.get(axios.fixUrl('/reservations/' + noti.taskId))
                     if(temp.data) {
                         me.addNotification(temp.data, noti.taskId);
@@ -86,24 +95,19 @@ export default {
         notificationSource.addEventListener('notification', (event) => {
             const eventData = JSON.parse(event.data);
             
-            switch(eventData.type) {
-                case 'NOTIFICATION_ADDED':
-                    // 새로운 알림이 추가된 경우
-                    me.notifications.push(eventData.notification);
-                    break;
-                    
-                case 'NOTIFICATION_DELETED':
-                    // 알림이 삭제된 경우
-                    me.notifications = me.notifications.filter(
-                        noti => noti.notificationId !== eventData.notificationId
-                    );
-                    break;
-                    
-                default:
-                    // 일반 실시간 알림인 경우
-                    if (eventData.title && eventData.description) {
-                        me.addNotification(eventData, crypto.randomUUID());
-                    }
+            if (eventData.type === 'NOTIFICATION_ADDED') {
+                // 새로운 알림이 추가된 경우
+                me.notifications.push(eventData.notification);
+            } else if (eventData.type === 'NOTIFICATION_DELETED') {
+                // 알림이 삭제된 경우
+                me.notifications = me.notifications.filter(
+                    noti => noti.notificationId !== eventData.notificationId
+                );
+            } else {
+                // 일반 실시간 알림인 경우
+                if (eventData.title && eventData.description) {
+                    me.addNotification(eventData, crypto.randomUUID());
+                }
             }
         });
     },
@@ -169,6 +173,7 @@ export default {
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     overflow: hidden;
+    margin-bottom: 20px;
 }
 
 .notification-header {
