@@ -96,12 +96,16 @@ export default {
             const eventData = JSON.parse(event.data);
             
             if (eventData.type === 'NOTIFICATION_ADDED') {
-                // 새로운 알림이 추가된 경우
-                me.notifications.push(eventData.notification);
+                const existingNotification = me.notifications.find(n => n.taskId === eventData.notification.taskId);
+                if (existingNotification) {
+                    existingNotification.dueDate = eventData.notification.dueDate;
+                } else {
+                    me.notifications.push(eventData.notification);
+                }
             } else if (eventData.type === 'NOTIFICATION_DELETED') {
                 // 알림이 삭제된 경우
                 me.notifications = me.notifications.filter(
-                    noti => noti.notificationId !== eventData.notificationId
+                    noti => noti.taskId !== eventData.notificationId
                 );
             } else {
                 // 일반 실시간 알림인 경우
