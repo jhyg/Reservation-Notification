@@ -112,12 +112,8 @@
             }
         },
         methods:{
-            notiNow(noti){
+            notiNow(){
                 this.closeDialog()
-                const appComponent = this.$root.$children[0]
-                if (appComponent && appComponent.addNotification) {
-                    appComponent.addNotification(noti, crypto.randomUUID())
-                }
             },
             closeDialog(){
                 this.openDialog = false

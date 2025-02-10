@@ -140,8 +140,14 @@
             async save(){
                 try {
                     this.value.userId = 'user'
-                    if(this.isNow){
-                        this.$emit('notiNow', this.value)
+                    if(this.isNow) {
+                        // 즉시 알림 발송
+                        await axios.post(axios.fixUrl('/notifications/broadcast'), {
+                            title: this.value.title,
+                            description: this.value.description
+                        });
+                        this.editMode = false;
+                        this.$emit('notiNow')
                     } else {
                         var temp = null;
 
@@ -161,6 +167,7 @@
                                 dueDate: this.value.dueDate
                             };
                             await axios.post(axios.fixUrl('/notifications'), notificationData);
+                            await axios.post(axios.fixUrl('/notifications/reminder'), notificationData);
                         }
 
                         if(this.value!=null) {

@@ -37,7 +37,6 @@ import SNSApp from './SNSApp.vue'
 const axios = require('axios').default;
 
 export default {
-
     components: {
         SNSApp
     },
@@ -50,7 +49,6 @@ export default {
         urlPath: null,
         notifications: [],
         currentDate: null,
-        // 맥 스타일 알림 관련 데이터 추가
         showNotification: false,
         snackbarText: "",
         activeNotifications: [],
@@ -62,14 +60,14 @@ export default {
         var path = document.location.href.split("#/")
         this.urlPath = path[1];
 
+        // 초기 알림 목록 로드
         var temp = await axios.get(axios.fixUrl('/notifications'))
         me.notifications = temp.data._embedded.notifications;
         
-        // SSE 연결 설정
+        // 시간 기반 알림 구독
         const eventSource = new EventSource('/notifications/stream');
         eventSource.addEventListener('time', (event) => {
             const currentTime = event.data;
-            
             me.currentDate = currentTime.substring(0, 16);
 
             me.notifications.forEach(async function (noti){
@@ -81,6 +79,32 @@ export default {
                     }
                 }
             })
+        });
+
+        // 실시간 알림 구독
+        const notificationSource = new EventSource('/notifications/subscribe');
+        notificationSource.addEventListener('notification', (event) => {
+            const eventData = JSON.parse(event.data);
+            
+            switch(eventData.type) {
+                case 'NOTIFICATION_ADDED':
+                    // 새로운 알림이 추가된 경우
+                    me.notifications.push(eventData.notification);
+                    break;
+                    
+                case 'NOTIFICATION_DELETED':
+                    // 알림이 삭제된 경우
+                    me.notifications = me.notifications.filter(
+                        noti => noti.notificationId !== eventData.notificationId
+                    );
+                    break;
+                    
+                default:
+                    // 일반 실시간 알림인 경우
+                    if (eventData.title && eventData.description) {
+                        me.addNotification(eventData, crypto.randomUUID());
+                    }
+            }
         });
     },
 
@@ -121,7 +145,9 @@ export default {
     }
 };
 </script>
+
 <style>
+/* 기존 스타일 유지 */
 *{
     font-family: "Noto Sans KR", sans-serif !important;
 }
@@ -131,11 +157,11 @@ export default {
     top: 0;
     right: 0;
     z-index: 9999;
-    pointer-events: none; /* 컨테이너는 클릭 이벤트를 통과시킴 */
+    pointer-events: none;
 }
 
 .mac-notification {
-    pointer-events: auto; /* 개별 알림은 클릭 가능하게 */
+    pointer-events: auto;
     position: fixed;
     right: 20px;
     width: 300px;
@@ -164,7 +190,6 @@ export default {
     margin-left: auto;
 }
 
-/* 애니메이션 수정 */
 .slide-notification-enter-active,
 .slide-notification-leave-active {
     transition: all 0.3s ease;
@@ -180,7 +205,6 @@ export default {
     opacity: 0;
 }
 
-/* 위치 변경 애니메이션 */
 .slide-notification-move {
     transition: transform 0.3s ease;
 }
