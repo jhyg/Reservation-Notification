@@ -82,10 +82,12 @@ export default {
                     currentDateTime.getHours() === dueDateTime.getHours() &&
                     currentDateTime.getMinutes() === dueDateTime.getMinutes()) {
                     
-                    var temp = await axios.get(axios.fixUrl('/reservations/' + noti.taskId))
-                    if(temp.data) {
-                        me.addNotification(temp.data, noti.taskId);
-                    }
+                    // if(noti.userId == me.currentUser.userId) {
+                        var temp = await axios.get(axios.fixUrl('/reservations/' + noti.taskId))
+                        if(temp.data) {
+                            me.addNotification(temp.data, noti.taskId);
+                        }
+                    // }
                 }
             })
         });
@@ -109,9 +111,11 @@ export default {
                 );
             } else {
                 // 일반 실시간 알림인 경우
-                if (eventData.title && eventData.description) {
-                    me.addNotification(eventData, crypto.randomUUID());
-                }
+                // if(eventData.userId == me.currentUser.userId) {
+                    if (eventData.title && eventData.description) {
+                        me.addNotification(eventData, crypto.randomUUID());
+                    }
+                // }
             }
         });
     },
