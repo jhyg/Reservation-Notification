@@ -16,6 +16,7 @@
         </v-card-title >        
 
         <v-card-text style="background-color: white;">
+            <String label="target_user_id" v-model="value.userId" :editMode="editMode" :inputUI="''"/>
             <String label="Title" v-model="value.title" :editMode="editMode" :inputUI="''"/>
             <String label="Description" v-model="value.description" :editMode="editMode" :inputUI="''"/>
             <v-switch
@@ -139,14 +140,15 @@
             },
             async save(){
                 try {
-                    this.value.userId = 'user'
                     if(this.isNow) {
                         // 즉시 알림 발송
                         await axios.post(axios.fixUrl('/notifications/broadcast'), {
                             title: this.value.title,
+                            userId: this.value.userId,
                             description: this.value.description
                         });
                         this.editMode = false;
+                        this.isNow = false;
                         this.$emit('notiNow')
                     } else {
                         var temp = null;

@@ -53,12 +53,15 @@ export default {
         snackbarText: "",
         activeNotifications: [],
         notificationCounter: 0,
+        userInfo: null,
     }),
     
     async created() {
         var me = this
         var path = document.location.href.split("#/")
         this.urlPath = path[1];
+
+        me.userInfo = JSON.parse(localStorage.getItem('userInfo'));
 
         // 초기 알림 목록 로드
         var temp = await axios.get(axios.fixUrl('/notifications'))
@@ -82,12 +85,12 @@ export default {
                     currentDateTime.getHours() === dueDateTime.getHours() &&
                     currentDateTime.getMinutes() === dueDateTime.getMinutes()) {
                     
-                    // if(noti.userId == me.currentUser.userId) {
+                    if((!noti.userId && noti.userId == '') || noti.userId == me.userInfo.userId) {
                         var temp = await axios.get(axios.fixUrl('/reservations/' + noti.taskId))
                         if(temp.data) {
                             me.addNotification(temp.data, noti.taskId);
                         }
-                    // }
+                    }
                 }
             })
         });
@@ -111,11 +114,11 @@ export default {
                 );
             } else {
                 // 일반 실시간 알림인 경우
-                // if(eventData.userId == me.currentUser.userId) {
+                if((!eventData.userId && eventData.userId == '') || eventData.userId == me.userInfo.userId) {
                     if (eventData.title && eventData.description) {
                         me.addNotification(eventData, crypto.randomUUID());
                     }
-                // }
+                }
             }
         });
     },

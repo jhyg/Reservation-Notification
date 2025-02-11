@@ -114,6 +114,13 @@
         methods:{
             notiNow(){
                 this.closeDialog()
+                this.newValue = {
+                    'taskId': '',
+                    'userId': '',
+                    'title': '',
+                    'description': '',
+                    'dueDate': new Date().toISOString(),
+                }
             },
             closeDialog(){
                 this.openDialog = false
