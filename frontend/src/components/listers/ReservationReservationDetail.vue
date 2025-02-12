@@ -75,18 +75,18 @@
             editMode: false,
         }),
         async created() {
-            var me = this;
-            var params = this.$route.params;
-            var temp = await axios.get(axios.fixUrl('/reservations/' + params.id))
-            if(temp.data) {
-                me.item = temp.data
-            }
+            // var me = this;
+            // var params = this.$route.params;
+            // var temp = await axios.get(axios.fixUrl('/reservations/' + params.id))
+            // if(temp.data) {
+            //     me.item = temp.data
+            // }
         },
         methods: {
             goList() {
-                var path = window.location.href.slice(window.location.href.indexOf("/#/"), window.location.href.lastIndexOf("/#"));
-                path = path.replace("/#/", "/");
-                this.$router.push(path);
+                // var path = window.location.href.slice(window.location.href.indexOf("/#/"), window.location.href.lastIndexOf("/#"));
+                // path = path.replace("/#/", "/");
+                // this.$router.push(path);
             },
             edit() {
                 this.editMode = true;
