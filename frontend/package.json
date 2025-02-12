@@ -1,16 +1,18 @@
 {
-  "name": "my-app",
+  "name": "reservation-notification-app",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build",
+    "build": "vue-cli-service build --target wc --name reservation-notification-app ./src/web-component.js",
+    "start": "serve -l 8080 dist",
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
     "@johmun/vue-tags-input": "^2.1.0",
     "axios": "^0.26.0",
     "core-js": "^3.6.5",
+    "serve": "^14.2.4",
     "vue": "^2.6.11",
     "vue-router": "^3.4.3",
     "vue2-google-maps": "^0.10.7",
