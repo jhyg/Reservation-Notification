@@ -11,6 +11,7 @@ import registrationalarm.ReservationApplication;
 import registrationalarm.domain.ReservationCreated;
 import registrationalarm.domain.ReservationDeleted;
 import registrationalarm.domain.ReservationUpdated;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Entity
 @Table(name = "Reservation_table")
@@ -30,6 +31,10 @@ public class Reservation {
     private String description;
 
     private Date dueDate;
+
+    @Column(name = "is_now")
+    @JsonProperty("isNow")
+    private boolean now;
 
     @PostPersist
     public void onPostPersist() {

@@ -1,6 +1,6 @@
 <template>
     <v-app id="inspire">
-        <SNSApp />
+        <SNSApp style="display: none;" />
         <div class="notifications-container">
             <transition-group name="slide-notification">
                 <div v-for="(notification, index) in activeNotifications" 
@@ -171,8 +171,10 @@ export default {
     position: fixed;
     top: 0;
     right: 0;
-    z-index: 9999;
+    z-index: 999999999;
     pointer-events: none;
+    width: auto;
+    height: auto;
 }
 
 .mac-notification {
@@ -185,6 +187,7 @@ export default {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     overflow: hidden;
     margin-bottom: 20px;
+    z-index: 999999;
 }
 
 .notification-header {

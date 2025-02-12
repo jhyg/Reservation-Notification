@@ -79,3 +79,33 @@ sudo ./aws/install
 curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
 sudo mv /tmp/eksctl /usr/local/bin
 ```
+
+
+## 예약 알림 테스트
+
+1. 예약 알림 테스트
+```
+curl -X POST http://localhost:8088/reservations \
+-H "Content-Type: application/json" \
+-d '{
+    "userId": "",
+    "title": "test",
+    "description": "test",
+    "isNow": false,
+    "dueDate": "2025-02-12T16:16:00+09:00"
+}'
+```
+
+2. 실시간 알림 테스트
+```
+curl -X POST http://localhost:8088/reservations \
+-H "Content-Type: application/json" \
+-d '{
+    "userId": "",
+    "title": "test",
+    "description": "test",
+    "isNow": true,
+    "dueDate": null
+}'
+```
+

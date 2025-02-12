@@ -214,20 +214,25 @@
             async remove(){
                 try {
                     if (!this.offline) {
-                        await axios.delete(axios.fixUrl(this.value._links.self.href));
+                        await axios.delete(axios.fixUrl('/reservations/' + this.value.taskId));
                         
-                        // 실시간 알림 브로드캐스트
-                        await axios.post(axios.fixUrl('/notifications/broadcast'), {
-                            type: 'NOTIFICATION_DELETED',
-                            notificationId: this.value.notificationId
-                        });
+                        // 알림 목록을 조회해서 존재하는 경우에만 삭제
+                        const notiResponse = await axios.get(axios.fixUrl('/notifications'));
+                        const notifications = notiResponse.data._embedded.notifications;
                         
-                        // REST API 알림 삭제
-                        await axios.delete(axios.fixUrl('http://localhost:8083/notifications/' + this.value.notificationId))
+                        if (notifications.some(noti => noti.notificationId === this.value.notificationId)) {
+                            // 실시간 알림 브로드캐스트
+                            await axios.post(axios.fixUrl('/notifications/broadcast'), {
+                                type: 'NOTIFICATION_DELETED',
+                                notificationId: this.value.notificationId
+                            });
+                            
+                            // REST API 알림 삭제
+                            await axios.delete(axios.fixUrl('http://localhost:8083/notifications/' + this.value.notificationId));
+                        }
                     }
 
                     this.editMode = false;
-                    this.isDeleted = true;
 
                     this.$emit('input', this.value);
                     this.$emit('delete', this.value);

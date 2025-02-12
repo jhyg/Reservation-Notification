@@ -101,7 +101,7 @@
             } 
 
             var temp = await axios.get(axios.fixUrl('/reservations'))
-            me.values = temp.data._embedded.reservations;
+            me.values = temp.data;
             
             me.newValue = {
                 'taskId': '',
@@ -139,14 +139,14 @@
             remove(value){
                 var where = -1;
                 for(var i=0; i<this.values.length; i++){
-                    if(this.values[i]._links.self.href == value._links.self.href){
+                    if(this.values[i].taskId == value.taskId){
                         where = i;
                         break;
                     }
                 }
 
                 if(where > -1){
-                    this.values.splice(i, 1);
+                    this.values.splice(where, 1);
                     this.$emit('input', this.values);
                 }
             },
