@@ -106,150 +106,151 @@
             isNow: false,
         }),
 	async created() {
+        if (this.value && this.value.dueDate) {
+            const dueDate = new Date(this.value.dueDate);
+            const now = new Date();
+            
+            if (dueDate < now) {
+                await this.remove();
+            }
+        }
+    },
+    methods: {
+        decode(value) {
+            return decodeURIComponent(value);
         },
-        methods: {
-            decode(value) {
-                return decodeURIComponent(value);
-            },
-            selectFile(){
-                if(this.editMode == false) {
-                    return false;
-                }
-                var me = this
-                var input = document.createElement("input");
-                input.type = "file";
-                input.accept = "image/*";
-                input.id = "uploadInput";
-                
-                input.click();
-                input.onchange = function (event) {
-                    var file = event.target.files[0]
-                    var reader = new FileReader();
+        selectFile(){
+            if(this.editMode == false) {
+                return false;
+            }
+            var me = this
+            var input = document.createElement("input");
+            input.type = "file";
+            input.accept = "image/*";
+            input.id = "uploadInput";
+            
+            input.click();
+            input.onchange = function (event) {
+                var file = event.target.files[0]
+                var reader = new FileReader();
 
-                    reader.onload = function () {
-                        var result = reader.result;
-                        me.imageUrl = result;
-                        me.value.photo = result;
-                        
-                    };
-                    reader.readAsDataURL( file );
+                reader.onload = function () {
+                    var result = reader.result;
+                    me.imageUrl = result;
+                    me.value.photo = result;
+                    
                 };
-            },
-            edit() {
-                this.editMode = true;
-            },
-            async save(){
-                try {
-                    if(this.isNow) {
-                        // 즉시 알림 발송
-                        await axios.post(axios.fixUrl('/notifications/broadcast'), {
-                            title: this.value.title,
+                reader.readAsDataURL( file );
+            };
+        },
+        edit() {
+            this.editMode = true;
+        },
+        async save(){
+            try {
+                if(this.isNow) {
+                    // 즉시 알림 발송
+                    await axios.post(axios.fixUrl('/notifications/broadcast'), {
+                        title: this.value.title,
+                        userId: this.value.userId,
+                        description: this.value.description
+                    });
+                    this.editMode = false;
+                    this.isNow = false;
+                    this.$emit('notiNow')
+                } else {
+                    var temp = null;
+
+                    if(!this.offline) {
+                        if(this.isNew) {
+                            this.value.taskId = crypto.randomUUID()
+                            this.value.notificationId = this.value.taskId
+                            temp = await axios.post(axios.fixUrl('/reservations'), this.value);
+                        } else {
+                            temp = await axios.put(axios.fixUrl(this.value._links.self.href), this.value);
+                        }
+
+                        const notificationData = {
+                            notificationId: this.value.notificationId,
+                            taskId: this.value.notificationId,
                             userId: this.value.userId,
-                            description: this.value.description
-                        });
-                        this.editMode = false;
-                        this.isNow = false;
-                        this.$emit('notiNow')
-                    } else {
-                        var temp = null;
-
-                        if(!this.offline) {
-                            if(this.isNew) {
-                                this.value.taskId = crypto.randomUUID()
-                                this.value.notificationId = this.value.taskId
-                                temp = await axios.post(axios.fixUrl('/reservations'), this.value);
-                            } else {
-                                temp = await axios.put(axios.fixUrl(this.value._links.self.href), this.value);
-                            }
-
-                            const notificationData = {
-                                notificationId: this.value.notificationId,
-                                taskId: this.value.notificationId,
-                                userId: this.value.userId,
-                                dueDate: this.value.dueDate
-                            };
-                            
-                            // REST API로 알림 저장
-                            await axios.post(axios.fixUrl('/notifications'), notificationData);
-                            // 실시간으로 모든 클라이언트에 알림
-                            await axios.post(axios.fixUrl('/notifications/reminder'), notificationData);
-                        }
-
-                        if(this.value!=null) {
-                            for(var k in temp.data) {
-                                this.value[k] = temp.data[k];
-                            }
-                        } else {
-                            this.value = temp.data;
-                        }
-
-                        this.editMode = false;
-                        this.$emit('input', this.value);
-
-                        if (this.isNew) {
-                            this.$emit('add', this.value);
-                        } else {
-                            this.$emit('edit', this.value);
-                        }
-
-                        this.snackbar.text = '성공적으로 저장되었습니다.';
-                        this.snackbar.color = 'success';
-                        this.snackbar.status = true;
-
-                        setTimeout(() => {
-                            location.reload();
-                        }, 1000);
+                            dueDate: this.value.dueDate
+                        };
+                        
+                        // REST API로 알림 저장
+                        await axios.post(axios.fixUrl('/notifications'), notificationData);
+                        // 실시간으로 모든 클라이언트에 알림
+                        await axios.post(axios.fixUrl('/notifications/reminder'), notificationData);
                     }
 
-                } catch(e) {
-                    this.snackbar.color = 'error';
-                    if(e.response && e.response.data.message) {
-                        this.snackbar.text = e.response.data.message;
-                    } else {
-                        this.snackbar.text = '저장 중 오류가 발생했습니다.';
-                    }
-                    this.snackbar.status = true;
-                }
-            },
-            async remove(){
-                try {
-                    if (!this.offline) {
-                        await axios.delete(axios.fixUrl('/reservations/' + this.value.taskId));
-                        
-                        // 알림 목록을 조회해서 존재하는 경우에만 삭제
-                        const notiResponse = await axios.get(axios.fixUrl('/notifications'));
-                        const notifications = notiResponse.data._embedded.notifications;
-                        
-                        if (notifications.some(noti => noti.notificationId === this.value.notificationId)) {
-                            // 실시간 알림 브로드캐스트
-                            await axios.post(axios.fixUrl('/notifications/broadcast'), {
-                                type: 'NOTIFICATION_DELETED',
-                                notificationId: this.value.notificationId
-                            });
-                            
-                            // REST API 알림 삭제
-                            await axios.delete(axios.fixUrl('http://localhost:8083/notifications/' + this.value.notificationId));
+                    if(this.value!=null) {
+                        for(var k in temp.data) {
+                            this.value[k] = temp.data[k];
                         }
+                    } else {
+                        this.value = temp.data;
                     }
 
                     this.editMode = false;
-
                     this.$emit('input', this.value);
-                    this.$emit('delete', this.value);
 
-                } catch(e) {
-                    this.snackbar.status = true
-                    if(e.response && e.response.data.message) {
-                        this.snackbar.text = e.response.data.message
+                    if (this.isNew) {
+                        this.$emit('add', this.value);
                     } else {
-                        this.snackbar.text = e
+                        this.$emit('edit', this.value);
                     }
+
+                    this.snackbar.text = '성공적으로 저장되었습니다.';
+                    this.snackbar.color = 'success';
+                    this.snackbar.status = true;
+
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
                 }
-            },
-            change(){
-                this.$emit('input', this.value);
-            },
+
+            } catch(e) {
+                this.snackbar.color = 'error';
+                if(e.response && e.response.data.message) {
+                    this.snackbar.text = e.response.data.message;
+                } else {
+                    this.snackbar.text = '저장 중 오류가 발생했습니다.';
+                }
+                this.snackbar.status = true;
+            }
         },
-    }
+        async remove(){
+            try {
+                if (!this.offline) {
+                    await axios.delete(axios.fixUrl('/reservations/' + this.value.taskId));
+                    
+                    await axios.post(axios.fixUrl('/notifications/broadcast'), {
+                        type: 'NOTIFICATION_DELETED',
+                        notificationId: this.value.notificationId
+                    });
+                    
+                    await axios.delete(axios.fixUrl('http://localhost:8083/notifications/' + this.value.notificationId));
+                    
+                }
+
+                this.editMode = false;
+
+                this.$emit('input', this.value);
+                this.$emit('delete', this.value);
+
+            } catch(e) {
+                this.snackbar.status = true
+                if(e.response && e.response.data.message) {
+                    this.snackbar.text = e.response.data.message
+                } else {
+                    this.snackbar.text = e
+                }
+            }
+        },
+        change(){
+            this.$emit('input', this.value);
+        },
+    },
+}
 </script>
 

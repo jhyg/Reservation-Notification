@@ -74,11 +74,10 @@ export default {
             me.currentDate = currentTime.substring(0, 16);
 
             me.notifications.forEach(async function (noti){
-                // ISO 문자열을 Date 객체로 변환하여 비교
+
                 const currentDateTime = new Date(currentTime);
                 const dueDateTime = new Date(noti.dueDate);
                 
-                // 년, 월, 일, 시, 분이 같은지 비교
                 if (currentDateTime.getFullYear() === dueDateTime.getFullYear() &&
                     currentDateTime.getMonth() === dueDateTime.getMonth() &&
                     currentDateTime.getDate() === dueDateTime.getDate() &&
