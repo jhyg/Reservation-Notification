@@ -80,7 +80,7 @@
     import ReservationReservation from './../ReservationReservation.vue';
 
     export default {
-        name: 'ReservationReservationManager',
+        name: 'ReservationReservationCards',
         components: {
             ReservationReservation,
         },
