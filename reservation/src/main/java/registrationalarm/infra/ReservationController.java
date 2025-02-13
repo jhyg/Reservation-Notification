@@ -41,21 +41,19 @@ public class ReservationController {
             // 예약 알림 처리
             String uuid = UUID.randomUUID().toString();
             reservation.setTaskId(uuid);
-            reservation.setNotificationId(uuid);
             
             try {
                 Reservation savedReservation = reservationRepository.save(reservation);
 
                 // notification 데이터 생성 및 전송
                 Map<String, Object> notificationData = new HashMap<>();
-                notificationData.put("notificationId", savedReservation.getNotificationId());
                 notificationData.put("taskId", savedReservation.getTaskId());
                 notificationData.put("userId", savedReservation.getUserId());
                 notificationData.put("dueDate", savedReservation.getDueDate());
+                notificationData.put("title", savedReservation.getTitle());
+                notificationData.put("description", savedReservation.getDescription());
 
                 RestTemplate restTemplate = new RestTemplate();
-                restTemplate.postForEntity("http://localhost:8083/notifications", 
-                                         notificationData, Object.class);
                 restTemplate.postForEntity("http://localhost:8083/notifications/reminder", 
                                          notificationData, Object.class);
                 

@@ -73,7 +73,6 @@
             me.values = temp.data._embedded.notifications;
             
             me.newValue = {
-                'notificationId': '',
                 'userId': '',
                 'taskId': '',
                 'dueDate': new Date().toISOString(),

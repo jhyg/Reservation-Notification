@@ -105,16 +105,7 @@
             },
             isNow: false,
         }),
-	async created() {
-        if (this.value && this.value.dueDate) {
-            const dueDate = new Date(this.value.dueDate);
-            const now = new Date();
-            
-            if (dueDate < now) {
-                await this.remove();
-            }
-        }
-    },
+	async created() {},
     methods: {
         decode(value) {
             return decodeURIComponent(value);
@@ -164,22 +155,19 @@
                     if(!this.offline) {
                         if(this.isNew) {
                             this.value.taskId = crypto.randomUUID()
-                            this.value.notificationId = this.value.taskId
                             temp = await axios.post(axios.fixUrl('/reservations'), this.value);
                         } else {
                             temp = await axios.put(axios.fixUrl(this.value._links.self.href), this.value);
                         }
 
                         const notificationData = {
-                            notificationId: this.value.notificationId,
-                            taskId: this.value.notificationId,
+                            taskId: this.value.taskId,
                             userId: this.value.userId,
-                            dueDate: this.value.dueDate
+                            dueDate: this.value.dueDate,
+                            title: this.value.title,
+                            description: this.value.description
                         };
                         
-                        // REST API로 알림 저장
-                        await axios.post(axios.fixUrl('/notifications'), notificationData);
-                        // 실시간으로 모든 클라이언트에 알림
                         await axios.post(axios.fixUrl('/notifications/reminder'), notificationData);
                     }
 
@@ -226,11 +214,8 @@
                     
                     await axios.post(axios.fixUrl('/notifications/broadcast'), {
                         type: 'NOTIFICATION_DELETED',
-                        notificationId: this.value.notificationId
-                    });
-                    
-                    await axios.delete(axios.fixUrl('http://localhost:8083/notifications/' + this.value.notificationId));
-                    
+                        taskId: this.value.taskId
+                    }); 
                 }
 
                 this.editMode = false;

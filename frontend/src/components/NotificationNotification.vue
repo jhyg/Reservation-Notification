@@ -128,7 +128,6 @@
 
                     if(!this.offline) {
                         if(this.isNew) {
-                            this.value.notificationId = crypto.randomUUID()
                             temp = await axios.post(axios.fixUrl('/notifications'), this.value)
                         } else {
                             temp = await axios.put(axios.fixUrl(this.value._links.self.href), this.value)

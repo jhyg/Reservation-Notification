@@ -47,7 +47,7 @@ export default {
         components: [],
         sideBar: true,
         urlPath: null,
-        notifications: [],
+        reservations: [],
         currentDate: null,
         showNotification: false,
         snackbarText: "",
@@ -64,8 +64,8 @@ export default {
         me.userInfo = JSON.parse(localStorage.getItem('userInfo'));
 
         // 초기 알림 목록 로드
-        var temp = await axios.get(axios.fixUrl('/notifications'))
-        me.notifications = temp.data._embedded.notifications;
+        var temp = await axios.get(axios.fixUrl('/reservations'))
+        me.reservations = temp.data;
         
         // 시간 기반 알림 구독
         const eventSource = new EventSource('/notifications/stream');
@@ -73,23 +73,44 @@ export default {
             const currentTime = event.data;
             me.currentDate = currentTime.substring(0, 16);
 
-            me.notifications.forEach(async function (noti){
-
+            me.reservations.forEach(async function (reservation){
                 const currentDateTime = new Date(currentTime);
-                const dueDateTime = new Date(noti.dueDate);
+                const dueDateTime = new Date(reservation.dueDate);
+                const tenMinutesBeforeDue = new Date(dueDateTime.getTime() - 10 * 60000);
                 
-                if (currentDateTime.getFullYear() === dueDateTime.getFullYear() &&
+                if (currentDateTime.getFullYear() === tenMinutesBeforeDue.getFullYear() &&
+                    currentDateTime.getMonth() === tenMinutesBeforeDue.getMonth() &&
+                    currentDateTime.getDate() === tenMinutesBeforeDue.getDate() &&
+                    currentDateTime.getHours() === tenMinutesBeforeDue.getHours() &&
+                    currentDateTime.getMinutes() === tenMinutesBeforeDue.getMinutes()) {
+                    
+                    if((!reservation.userId && reservation.userId == '') || reservation.userId == me.userInfo.userId) {
+                        me.addNotification({
+                            ...reservation,
+                            taskId: `${reservation.taskId}_10min`,
+                            displayDescription: `[10분 후 시작] ${reservation.description}`
+                        });
+                    }
+                } else if (currentDateTime.getFullYear() === dueDateTime.getFullYear() &&
                     currentDateTime.getMonth() === dueDateTime.getMonth() &&
                     currentDateTime.getDate() === dueDateTime.getDate() &&
                     currentDateTime.getHours() === dueDateTime.getHours() &&
                     currentDateTime.getMinutes() === dueDateTime.getMinutes()) {
                     
-                    if((!noti.userId && noti.userId == '') || noti.userId == me.userInfo.userId) {
-                        var temp = await axios.get(axios.fixUrl('/reservations/' + noti.taskId))
-                        if(temp.data) {
-                            me.addNotification(temp.data, noti.taskId);
-                        }
+                    if((!reservation.userId && reservation.userId == '') || reservation.userId == me.userInfo.userId) {
+                        me.addNotification({
+                            ...reservation,
+                            taskId: `${reservation.taskId}_start`,
+                            displayDescription: `[일정 시작] ${reservation.description}`
+                        });
                     }
+                } else if (dueDateTime < currentDateTime) {
+                    await axios.delete(axios.fixUrl('/reservations/' + reservation.taskId));
+                    
+                    await axios.post(axios.fixUrl('/notifications/broadcast'), {
+                        type: 'NOTIFICATION_DELETED',
+                        taskId: reservation.taskId
+                    });
                 }
             })
         });
@@ -100,22 +121,22 @@ export default {
             const eventData = JSON.parse(event.data);
             
             if (eventData.type === 'NOTIFICATION_ADDED') {
-                const existingNotification = me.notifications.find(n => n.taskId === eventData.notification.taskId);
+                const existingNotification = me.reservations.find(n => n.taskId === eventData.notification.taskId);
                 if (existingNotification) {
                     existingNotification.dueDate = eventData.notification.dueDate;
                 } else {
-                    me.notifications.push(eventData.notification);
+                    me.reservations.push(eventData.notification);
                 }
             } else if (eventData.type === 'NOTIFICATION_DELETED') {
                 // 알림이 삭제된 경우
-                me.notifications = me.notifications.filter(
-                    noti => noti.taskId !== eventData.notificationId
+                me.reservations = me.reservations.filter(
+                    noti => noti.taskId !== eventData.taskId
                 );
             } else {
                 // 일반 실시간 알림인 경우
                 if((!eventData.userId && eventData.userId == '') || eventData.userId == me.userInfo.userId) {
                     if (eventData.title && eventData.description) {
-                        me.addNotification(eventData, crypto.randomUUID());
+                        me.addNotification(eventData);
                     }
                 }
             }
@@ -145,14 +166,17 @@ export default {
         removeNotification(id) {
             this.activeNotifications = this.activeNotifications.filter(n => n.id !== id);
         },
-        addNotification(noti, taskId) {
-            const existingNotification = this.activeNotifications.find(n => n.taskId === taskId);
+        addNotification(reservation) {
+            if(!reservation.taskId || reservation.taskId == '') {
+                reservation.taskId = crypto.randomUUID();
+            }
+            const existingNotification = this.activeNotifications.find(n => n.taskId === reservation.taskId);
             if (!existingNotification) {
                 this.activeNotifications.push({
                     id: this.notificationCounter++,
-                    taskId: taskId,
-                    title: noti.title,
-                    description: noti.description
+                    taskId: reservation.taskId,
+                    title: reservation.title,
+                    description: reservation.displayDescription || reservation.description
                 });
             }
         }
@@ -166,7 +190,7 @@ export default {
     font-family: "Noto Sans KR", sans-serif !important;
 }
 
-.notifications-container {
+me.reservations-container {
     position: fixed;
     top: 0;
     right: 0;

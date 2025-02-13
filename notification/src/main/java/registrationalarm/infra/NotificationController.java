@@ -116,7 +116,7 @@ public class NotificationController {
     }
 
     @PostMapping("/notifications/reminder") 
-    public void createReminderNotification(@RequestBody Notification notification) {
+    public void createReminderNotification(@RequestBody Map<String, Object> notification) {
         // 모든 클라이언트에게 새로운 알림 정보 브로드캐스트
         List<SseEmitter> deadEmitters = new ArrayList<>();
         emitters.forEach(emitter -> {

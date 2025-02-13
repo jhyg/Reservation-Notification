@@ -17,12 +17,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class Notification {
 
     @Id
-    private String notificationId;
+    private String taskId;
 
     private String userId;
     
-    private String taskId;
-
     @JsonProperty("dueDate")
     private Date dueDate;
 
