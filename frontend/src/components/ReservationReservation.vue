@@ -137,6 +137,13 @@
         edit() {
             this.editMode = true;
         },
+        generateUUID() {
+            return 'm' + 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0,
+                    v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        },
         async save(){
             try {
                 if(this.isNow) {
@@ -154,7 +161,7 @@
 
                     if(!this.offline) {
                         if(this.isNew) {
-                            this.value.taskId = crypto.randomUUID()
+                            this.value.taskId = this.generateUUID()
                             temp = await axios.post(axios.fixUrl('/reservations'), this.value);
                         } else {
                             temp = await axios.put(axios.fixUrl(this.value._links.self.href), this.value);

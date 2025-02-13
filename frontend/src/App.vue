@@ -1,6 +1,7 @@
 <template>
     <v-app id="inspire">
         <SNSApp style="display: none;" />
+        <!-- <div class="notifications-container" :style="isSecureContext && notificationPermission ? 'display: none;' : ''"> -->
         <div class="notifications-container">
             <transition-group name="slide-notification">
                 <div v-for="(notification, index) in activeNotifications" 
@@ -54,6 +55,8 @@ export default {
         activeNotifications: [],
         notificationCounter: 0,
         userInfo: null,
+        notificationPermission: false,
+        isSecureContext: false,
     }),
     
     async created() {
@@ -67,6 +70,20 @@ export default {
         var temp = await axios.get(axios.fixUrl('/reservations'))
         me.reservations = temp.data;
         
+        // 알림 권한 요청
+        this.isSecureContext = window.isSecureContext && "Notification" in window;
+        
+        // 보안 컨텍스트에서만 알림 권한 요청
+        if (this.isSecureContext) {
+            try {
+                const permission = await Notification.requestPermission();
+                this.notificationPermission = permission === "granted";
+            } catch (error) {
+                console.warn('알림 권한 요청 실패:', error);
+                this.notificationPermission = false;
+            }
+        }
+
         // 시간 기반 알림 구독
         const eventSource = new EventSource('/notifications/stream');
         eventSource.addEventListener('time', (event) => {
@@ -149,6 +166,13 @@ export default {
     },
 
     methods: {
+        generateUUID() {
+            return 'm' + 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0,
+                    v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        },
         truncateText(text) {
             if (!text) return '';
             return text.length > 20 ? text.substring(0, 20) + '...' : text;
@@ -167,8 +191,8 @@ export default {
             this.activeNotifications = this.activeNotifications.filter(n => n.id !== id);
         },
         addNotification(reservation) {
-            if(!reservation.taskId || reservation.taskId == '') {
-                reservation.taskId = crypto.randomUUID();
+            if(!reservation.taskId) {
+                reservation.taskId = this.generateUUID();
             }
             const existingNotification = this.activeNotifications.find(n => n.taskId === reservation.taskId);
             if (!existingNotification) {
@@ -178,6 +202,19 @@ export default {
                     title: reservation.title,
                     description: reservation.displayDescription || reservation.description
                 });
+
+                // 시스템 알림 표시
+                if (this.isSecureContext && this.notificationPermission) {
+                    try {
+                        new Notification(reservation.title, {
+                            body: reservation.displayDescription || reservation.description,
+                            silent: false,
+                            requireInteraction: true
+                        });
+                    } catch (error) {
+                        console.warn('시스템 알림 표시 실패:', error);
+                    }
+                }
             }
         }
     }
