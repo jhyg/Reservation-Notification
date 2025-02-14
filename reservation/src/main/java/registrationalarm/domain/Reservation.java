@@ -22,7 +22,13 @@ public class Reservation {
     @Id
     private String taskId;
 
-    private String userId;
+    @ElementCollection
+    @CollectionTable(
+        name = "reservation_target_users",
+        joinColumns = @JoinColumn(name = "task_id")
+    )
+    @Column(name = "target_user_id")
+    private List<String> targetUserIds;
 
     private String title;
 

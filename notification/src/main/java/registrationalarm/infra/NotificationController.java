@@ -29,19 +29,51 @@ public class NotificationController {
     private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     
     // 실시간 알림을 위한 SseEmitter 목록
-    private static final List<SseEmitter> emitters = new ArrayList<>();
+    private static final List<SseEmitter> emitters = Collections.synchronizedList(new ArrayList<>());
 
     @GetMapping("/notifications/stream")
     public SseEmitter streamTime() {
         SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
         
+        try {
+            // 연결 시작 시 더미 이벤트 전송
+            emitter.send(SseEmitter.event()
+                .name("connect")
+                .data("connected")
+                .reconnectTime(10000));
+                
+            // 클라이언트 연결 유지를 위한 하트비트 이벤트
+            scheduler.scheduleAtFixedRate(() -> {
+                try {
+                    emitter.send(SseEmitter.event()
+                        .name("heartbeat")
+                        .data("ping")
+                        .reconnectTime(10000));
+                } catch (IOException e) {
+                    emitter.completeWithError(e);
+                }
+            }, 0, 30, TimeUnit.SECONDS);
+            
+        } catch (IOException e) {
+            emitter.completeWithError(e);
+            return emitter;
+        }
+        
+        emitters.add(emitter);
+        
         emitter.onCompletion(() -> {
+            emitters.remove(emitter);
             System.out.println("SSE completed");
         });
+        
         emitter.onTimeout(() -> {
+            emitters.remove(emitter);
+            emitter.complete();
             System.out.println("SSE timeout");
         });
+        
         emitter.onError((e) -> {
+            emitters.remove(emitter);
             System.out.println("SSE error: " + e.getMessage());
         });
         
@@ -56,13 +88,21 @@ public class NotificationController {
                         .data(currentTime)
                         .reconnectTime(10000));
                 }
-            } catch (IOException e) {
+            } catch (IOException | IllegalStateException e) {
+                emitters.remove(emitter);
                 emitter.completeWithError(e);
             }
         }, 0, 1, TimeUnit.SECONDS);
         
-        emitter.onCompletion(() -> future.cancel(true));
-        emitter.onTimeout(() -> future.cancel(true));
+        emitter.onCompletion(() -> {
+            future.cancel(true);
+            emitters.remove(emitter);
+        });
+        
+        emitter.onTimeout(() -> {
+            future.cancel(true);
+            emitters.remove(emitter);
+        });
         
         return emitter;
     }
@@ -70,6 +110,30 @@ public class NotificationController {
     @GetMapping("/notifications/subscribe")
     public SseEmitter subscribe() {
         SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
+        
+        try {
+            // 연결 시작 시 더미 이벤트 전송
+            emitter.send(SseEmitter.event()
+                .name("connect")
+                .data("Connected to notification stream")
+                .reconnectTime(10000));
+                
+            // 클라이언트 연결 유지를 위한 하트비트 이벤트
+            scheduler.scheduleAtFixedRate(() -> {
+                try {
+                    emitter.send(SseEmitter.event()
+                        .name("heartbeat")
+                        .data("ping")
+                        .reconnectTime(10000));
+                } catch (IOException e) {
+                    emitter.completeWithError(e);
+                }
+            }, 0, 30, TimeUnit.SECONDS);
+            
+        } catch (IOException e) {
+            emitter.completeWithError(e);
+        }
+        
         emitters.add(emitter);
         
         emitter.onCompletion(() -> {
@@ -85,20 +149,11 @@ public class NotificationController {
             System.out.println("Notification subscription error: " + e.getMessage());
         });
         
-        try {
-            emitter.send(SseEmitter.event()
-                .name("connect")
-                .data("Connected to notification stream")
-                .reconnectTime(10000));
-        } catch (IOException e) {
-            emitter.completeWithError(e);
-        }
-        
         return emitter;
     }
 
     @PostMapping("/notifications/broadcast")
-    public void broadcast(@RequestBody Map<String, String> notification) {
+    public void broadcast(@RequestBody Map<String, Object> notification) {
         List<SseEmitter> deadEmitters = new ArrayList<>();
 
         emitters.forEach(emitter -> {
@@ -133,5 +188,10 @@ public class NotificationController {
         });
         emitters.removeAll(deadEmitters);
     }
-    
+
+    // 클라이언트 재연결 처리를 위한 메서드 추가
+    @GetMapping("/notifications/reconnect")
+    public ResponseEntity<String> reconnect() {
+        return ResponseEntity.ok("Reconnected successfully");
+    }
 }

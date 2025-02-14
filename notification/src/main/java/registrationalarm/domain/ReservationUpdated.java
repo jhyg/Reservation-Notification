@@ -10,7 +10,7 @@ import registrationalarm.infra.AbstractEvent;
 public class ReservationUpdated extends AbstractEvent {
 
     private String taskId;
-    private String userId;
+    private List<String> targetUserIds;
     private String title;
     private String description;
     private Date dueDate;

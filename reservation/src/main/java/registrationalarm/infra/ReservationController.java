@@ -30,7 +30,7 @@ public class ReservationController {
             // 즉시 알림 발송
             Map<String, Object> notificationData = new HashMap<>();
             notificationData.put("title", reservation.getTitle());
-            notificationData.put("userId", reservation.getUserId());
+            notificationData.put("targetUserIds", reservation.getTargetUserIds());
             notificationData.put("description", reservation.getDescription());
 
             RestTemplate restTemplate = new RestTemplate();
@@ -48,7 +48,7 @@ public class ReservationController {
                 // notification 데이터 생성 및 전송
                 Map<String, Object> notificationData = new HashMap<>();
                 notificationData.put("taskId", savedReservation.getTaskId());
-                notificationData.put("userId", savedReservation.getUserId());
+                notificationData.put("targetUserIds", savedReservation.getTargetUserIds());
                 notificationData.put("dueDate", savedReservation.getDueDate());
                 notificationData.put("title", savedReservation.getTitle());
                 notificationData.put("description", savedReservation.getDescription());

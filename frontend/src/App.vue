@@ -1,13 +1,12 @@
 <template>
     <v-app id="inspire">
         <SNSApp style="display: none;" />
-        <!-- <div class="notifications-container" :style="isSecureContext && notificationPermission ? 'display: none;' : ''"> -->
         <div class="notifications-container">
             <transition-group name="slide-notification">
                 <div v-for="(notification, index) in activeNotifications" 
                     :key="notification.id" 
                     class="mac-notification"
-                    :style="{ top: `${20 + (index * 135)}px` }">
+                    :style="{ top: `${20 + (index * 160)}px` }">
                     <div class="notification-header">
                         <v-icon color="white" small>mdi-bell</v-icon>
                         <span class="ml-2">알림</span>
@@ -25,6 +24,9 @@
                         <div class="notification-title"><h2>{{ notification.title }}</h2></div>
                         <div class="notification-description">
                             {{ truncateText(notification.description) }}
+                        </div>
+                        <div class="notification-time">
+                            {{ getElapsedTime(notification.createdAt) }}
                         </div>
                     </div>
                 </div>
@@ -55,12 +57,13 @@ export default {
         activeNotifications: [],
         notificationCounter: 0,
         userInfo: null,
-        notificationPermission: false,
-        isSecureContext: false,
+        reconnectAttempts: 0,
+        maxReconnectAttempts: 10,
+        updateTimeInterval: null,
     }),
     
     async created() {
-        var me = this
+        var me = this;
         var path = document.location.href.split("#/")
         this.urlPath = path[1];
 
@@ -69,100 +72,18 @@ export default {
         // 초기 알림 목록 로드
         var temp = await axios.get(axios.fixUrl('/reservations'))
         me.reservations = temp.data;
-        
-        // 알림 권한 요청
-        this.isSecureContext = window.isSecureContext && "Notification" in window;
-        
-        // 보안 컨텍스트에서만 알림 권한 요청
-        if (this.isSecureContext) {
-            try {
-                const permission = await Notification.requestPermission();
-                this.notificationPermission = permission === "granted";
-            } catch (error) {
-                console.warn('알림 권한 요청 실패:', error);
-                this.notificationPermission = false;
-            }
-        }
 
-        // 시간 기반 알림 구독
-        const eventSource = new EventSource('/notifications/stream');
-        eventSource.addEventListener('time', (event) => {
-            const currentTime = event.data;
-            me.currentDate = currentTime.substring(0, 16);
+        // 시간 기반 알림 구독 - SSE 연결 개선
+        this.setupTimeEventSource();
 
-            me.reservations.forEach(async function (reservation){
-                const currentDateTime = new Date(currentTime);
-                const dueDateTime = new Date(reservation.dueDate);
-                const tenMinutesBeforeDue = new Date(dueDateTime.getTime() - 10 * 60000);
-                
-                if (currentDateTime.getFullYear() === tenMinutesBeforeDue.getFullYear() &&
-                    currentDateTime.getMonth() === tenMinutesBeforeDue.getMonth() &&
-                    currentDateTime.getDate() === tenMinutesBeforeDue.getDate() &&
-                    currentDateTime.getHours() === tenMinutesBeforeDue.getHours() &&
-                    currentDateTime.getMinutes() === tenMinutesBeforeDue.getMinutes()) {
-                    
-                    if((!reservation.userId && reservation.userId == '') || reservation.userId == me.userInfo.userId) {
-                        me.addNotification({
-                            ...reservation,
-                            taskId: `${reservation.taskId}_10min`,
-                            displayDescription: `[10분 후 시작] ${reservation.description}`
-                        });
-                    }
-                } else if (currentDateTime.getFullYear() === dueDateTime.getFullYear() &&
-                    currentDateTime.getMonth() === dueDateTime.getMonth() &&
-                    currentDateTime.getDate() === dueDateTime.getDate() &&
-                    currentDateTime.getHours() === dueDateTime.getHours() &&
-                    currentDateTime.getMinutes() === dueDateTime.getMinutes()) {
-                    
-                    if((!reservation.userId && reservation.userId == '') || reservation.userId == me.userInfo.userId) {
-                        me.addNotification({
-                            ...reservation,
-                            taskId: `${reservation.taskId}_start`,
-                            displayDescription: `[일정 시작] ${reservation.description}`
-                        });
-                    }
-                } else if (dueDateTime < currentDateTime) {
-                    await axios.delete(axios.fixUrl('/reservations/' + reservation.taskId));
-                    
-                    await axios.post(axios.fixUrl('/notifications/broadcast'), {
-                        type: 'NOTIFICATION_DELETED',
-                        taskId: reservation.taskId
-                    });
-                }
-            })
-        });
-
-        // 실시간 알림 구독
-        const notificationSource = new EventSource('/notifications/subscribe');
-        notificationSource.addEventListener('notification', (event) => {
-            const eventData = JSON.parse(event.data);
-            
-            if (eventData.type === 'NOTIFICATION_ADDED') {
-                const existingNotification = me.reservations.find(n => n.taskId === eventData.notification.taskId);
-                if (existingNotification) {
-                    existingNotification.dueDate = eventData.notification.dueDate;
-                } else {
-                    me.reservations.push(eventData.notification);
-                }
-            } else if (eventData.type === 'NOTIFICATION_DELETED') {
-                // 알림이 삭제된 경우
-                me.reservations = me.reservations.filter(
-                    noti => noti.taskId !== eventData.taskId
-                );
-            } else {
-                // 일반 실시간 알림인 경우
-                if((!eventData.userId && eventData.userId == '') || eventData.userId == me.userInfo.userId) {
-                    if (eventData.title && eventData.description) {
-                        me.addNotification(eventData);
-                    }
-                }
-            }
-        });
+        // 실시간 알림 구독 - SSE 연결 개선
+        this.setupNotificationEventSource();
     },
 
     mounted() {
         var me = this;
         me.components = this.$ManagerLists;
+        this.startTimeUpdate();
     },
 
     methods: {
@@ -200,22 +121,158 @@ export default {
                     id: this.notificationCounter++,
                     taskId: reservation.taskId,
                     title: reservation.title,
-                    description: reservation.displayDescription || reservation.description
+                    description: reservation.displayDescription || reservation.description,
+                    createdAt: new Date()
                 });
+            }
+        },
+        setupTimeEventSource() {
+            const eventSource = new EventSource('/notifications/stream');
+            
+            eventSource.onopen = () => {
+                console.log('Time SSE connection opened');
+                this.reconnectAttempts = 0;
+            };
 
-                // 시스템 알림 표시
-                if (this.isSecureContext && this.notificationPermission) {
-                    try {
-                        new Notification(reservation.title, {
-                            body: reservation.displayDescription || reservation.description,
-                            silent: false,
-                            requireInteraction: true
+            eventSource.onerror = (error) => {
+                console.error('Time SSE error:', error);
+                eventSource.close();
+                
+                if (this.reconnectAttempts < this.maxReconnectAttempts) {
+                    this.reconnectAttempts++;
+                    console.log(`Attempting to reconnect time stream (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+                    setTimeout(() => {
+                        this.setupTimeEventSource();
+                    }, 5000 * this.reconnectAttempts);
+                }
+            };
+
+            eventSource.addEventListener('time', this.handleTimeEvent);
+        },
+        setupNotificationEventSource() {
+            const notificationSource = new EventSource('/notifications/subscribe');
+            
+            notificationSource.onopen = () => {
+                console.log('Notification SSE connection opened');
+                this.reconnectAttempts = 0;
+            };
+
+            notificationSource.onerror = (error) => {
+                console.error('Notification SSE error:', error);
+                notificationSource.close();
+                
+                if (this.reconnectAttempts < this.maxReconnectAttempts) {
+                    this.reconnectAttempts++;
+                    console.log(`Attempting to reconnect notification stream (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+                    setTimeout(() => {
+                        this.setupNotificationEventSource();
+                    }, 5000 * this.reconnectAttempts);
+                }
+            };
+
+            notificationSource.addEventListener('notification', this.handleNotificationEvent);
+        },
+        handleTimeEvent(event) {
+            const currentTime = event.data;
+            this.currentDate = currentTime.substring(0, 16);
+
+            this.reservations.forEach(async (reservation) => {
+
+                const targetUserIds = reservation.targetUserIds || [];
+                const userMatches = targetUserIds.length === 0 || targetUserIds.includes(this.userInfo.userId);
+                if(userMatches) {
+                    const currentDateTime = new Date(currentTime);
+                    const dueDateTime = new Date(reservation.dueDate);
+                    const tenMinutesBeforeDue = new Date(dueDateTime.getTime() - 10 * 60000);
+                    
+                    if (currentDateTime.getFullYear() === tenMinutesBeforeDue.getFullYear() &&
+                        currentDateTime.getMonth() === tenMinutesBeforeDue.getMonth() &&
+                        currentDateTime.getDate() === tenMinutesBeforeDue.getDate() &&
+                        currentDateTime.getHours() === tenMinutesBeforeDue.getHours() &&
+                        currentDateTime.getMinutes() === tenMinutesBeforeDue.getMinutes()) {
+                        
+                        this.addNotification({
+                            ...reservation,
+                            taskId: `${reservation.taskId}_10min`,
+                            displayDescription: `[10분 후 시작] ${reservation.description}`
                         });
-                    } catch (error) {
-                        console.warn('시스템 알림 표시 실패:', error);
+                    } else if (currentDateTime.getFullYear() === dueDateTime.getFullYear() &&
+                        currentDateTime.getMonth() === dueDateTime.getMonth() &&
+                        currentDateTime.getDate() === dueDateTime.getDate() &&
+                        currentDateTime.getHours() === dueDateTime.getHours() &&
+                        currentDateTime.getMinutes() === dueDateTime.getMinutes()) {
+                        
+                        this.addNotification({
+                            ...reservation,
+                            taskId: `${reservation.taskId}_start`,
+                            displayDescription: `[일정 시작] ${reservation.description}`
+                        });
+                    } else if (dueDateTime < currentDateTime) {
+                        await axios.delete(axios.fixUrl('/reservations/' + reservation.taskId));
+                        
+                        await axios.post(axios.fixUrl('/notifications/broadcast'), {
+                            type: 'NOTIFICATION_DELETED',
+                            taskId: reservation.taskId
+                        });
+                    }
+                }
+            });
+        },
+        handleNotificationEvent(event) {
+            const eventData = JSON.parse(event.data);
+            
+            if (eventData.type === 'NOTIFICATION_ADDED') {
+                const existingNotification = this.reservations.find(n => n.taskId === eventData.notification.taskId);
+                if (existingNotification) {
+                    existingNotification.dueDate = eventData.notification.dueDate;
+                } else {
+                    this.reservations.push(eventData.notification);
+                }
+            } else if (eventData.type === 'NOTIFICATION_DELETED') {
+                this.reservations = this.reservations.filter(
+                    noti => noti.taskId !== eventData.taskId
+                );
+            } else {
+                const targetUserIds = eventData.targetUserIds || [];
+                const userMatches = targetUserIds.length === 0 || targetUserIds.includes(this.userInfo.userId);
+                if(userMatches) {
+                    if (eventData.title && eventData.description) {
+                        this.addNotification(eventData);
                     }
                 }
             }
+        },
+        getElapsedTime(createdAt) {
+            if (!createdAt) return '';
+            
+            const now = new Date();
+            const diff = now - createdAt;
+            const minutes = Math.floor(diff / 60000);
+            const hours = Math.floor(minutes / 60);
+
+            if (hours > 0) {
+                return `${hours}시간 전`;
+            } else if (minutes > 0) {
+                return `${minutes}분 전`;
+            } else {
+                return '지금';
+            }
+        },
+        startTimeUpdate() {
+            this.updateTimeInterval = setInterval(() => {
+                this.$forceUpdate();
+            }, 1000);
+        },
+    },
+    beforeDestroy() {
+        if (window.timeEventSource) {
+            window.timeEventSource.close();
+        }
+        if (window.notificationEventSource) {
+            window.notificationEventSource.close();
+        }
+        if (this.updateTimeInterval) {
+            clearInterval(this.updateTimeInterval);
         }
     }
 };
@@ -286,5 +343,12 @@ me.reservations-container {
 
 .slide-notification-move {
     transition: transform 0.3s ease;
+}
+
+.notification-time {
+    font-size: 12px;
+    color: #999;
+    margin-top: 8px;
+    text-align: right;
 }
 </style>
