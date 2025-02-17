@@ -17,6 +17,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ScheduledFuture;
 import java.text.SimpleDateFormat;
 import org.springframework.http.HttpStatus;
+import java.util.TimeZone;
 
 @RestController
 @CrossOrigin(origins = "*")
@@ -81,8 +82,10 @@ public class NotificationController {
             try {
                 Date now = new Date();
                 if (now.getSeconds() <= 2) {
-                    String currentTime = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm")
-                        .format(now);
+                    // 한국 시간(KST)으로 전송
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm");
+                    sdf.setTimeZone(TimeZone.getTimeZone("Asia/Seoul"));
+                    String currentTime = sdf.format(now);
                     emitter.send(SseEmitter.event()
                         .name("time")
                         .data(currentTime)
