@@ -1,34 +1,45 @@
 <template>
     <div class="notifications-container">
-        <transition-group name="slide-notification">
-            <div v-for="(notification, index) in activeNotifications" 
-                :key="notification.id" 
-                class="mac-notification"
-                :style="{ top: `${20 + (index * 160)}px` }">
-                <div class="notification-header">
-                    <v-icon color="white" small>mdi-bell</v-icon>
-                    <span class="ml-2">알림</span>
-                    <v-btn
-                        icon
-                        x-small
-                        color="white"
-                        @click="removeNotification(notification.id)"
-                        class="close-btn"
-                    >
-                        <v-icon small>mdi-close</v-icon>
-                    </v-btn>
-                </div>
-                <div class="notification-content">
-                    <div class="notification-title"><h2>{{ notification.title }}</h2></div>
-                    <div class="notification-description">
-                        {{ truncateText(notification.description) }}
+        <div class="notifications-wrapper">
+            <transition-group name="slide-notification">
+                <div v-for="(notification, index) in activeNotifications" 
+                    :key="notification.id" 
+                    class="mac-notification"
+                    :style="{ top: `${getNotificationTop(index)}px` }">
+                    <div class="notification-header">
+                        <v-icon color="white" small>mdi-bell</v-icon>
+                        <span class="ml-2">알림</span>
+                        <v-btn
+                            icon
+                            x-small
+                            color="white"
+                            @click="removeNotification(notification.id)"
+                            class="close-btn"
+                        >
+                            <v-icon small>mdi-close</v-icon>
+                        </v-btn>
                     </div>
-                    <div class="notification-time">
-                        {{ getElapsedTime(notification.createdAt) }}
+                    <div class="notification-content">
+                        <div class="notification-title"><h2>{{ notification.title }}</h2></div>
+                        <div class="notification-description" @click="toggleDescription(notification)">
+                            <span v-if="notification.isExpanded">{{ notification.description }}</span>
+                            <span v-else>{{ truncateText(notification.description) }}</span>
+                            <v-icon
+                                v-if="notification.description.length > 20"
+                                small
+                                color="white"
+                                class="expand-icon"
+                            >
+                                {{ notification.isExpanded ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
+                            </v-icon>
+                        </div>
+                        <div class="notification-time">
+                            {{ getElapsedTime(notification.createdAt) }}
+                        </div>
                     </div>
                 </div>
-            </div>
-        </transition-group>
+            </transition-group>
+        </div>
     </div>
 </template>
 
@@ -95,8 +106,15 @@ export default {
                     taskId: reservation.taskId,
                     title: reservation.title,
                     description: reservation.displayDescription || reservation.description,
-                    createdAt: new Date()
+                    createdAt: new Date(),
+                    isExpanded: false
                 });
+            }
+        },
+        toggleDescription(notification) {
+            if (notification.description.length > 20) {
+                notification.isExpanded = !notification.isExpanded;
+                this.$forceUpdate();
             }
         },
         setupTimeEventSource() {
@@ -236,6 +254,17 @@ export default {
                 this.$forceUpdate();
             }, 1000);
         },
+        getNotificationTop(index) {
+            let top = 20;
+            for (let i = 0; i < index; i++) {
+                const prevNotification = this.activeNotifications[i];
+                const baseHeight = 140;
+                const expandedHeight = prevNotification.isExpanded ? 
+                    (prevNotification.description.length / 20) * 17 : 0;
+                top += baseHeight + expandedHeight + 20;
+            }
+            return top;
+        },
     },
     beforeDestroy() {
         if (window.timeEventSource) {
@@ -261,22 +290,27 @@ export default {
     top: 0;
     right: 0;
     z-index: 999999999;
-    pointer-events: none;
-    width: auto;
-    height: auto;
+    width: 340px;
+    height: 100vh;
+}
+
+.notifications-wrapper {
+    height: 100%;
+    overflow-y: auto;
+    position: relative;
 }
 
 .mac-notification {
     pointer-events: auto;
-    position: fixed;
+    position: absolute;
     right: 20px;
     width: 300px;
     background: rgba(50, 50, 50, 0.95);
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     overflow: hidden;
-    margin-bottom: 20px;
     z-index: 999999;
+    transition: all 0.3s ease;
 }
 
 .notification-header {
@@ -292,6 +326,7 @@ export default {
     padding: 15px;
     color: white;
     font-size: 14px;
+    word-break: break-word;
 }
 
 .close-btn {
@@ -322,5 +357,18 @@ export default {
     color: #999;
     margin-top: 8px;
     text-align: right;
+}
+
+.notification-description {
+    cursor: pointer;
+    position: relative;
+    padding-right: 24px;
+}
+
+.expand-icon {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
 }
 </style>
