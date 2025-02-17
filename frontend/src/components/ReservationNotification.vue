@@ -170,7 +170,7 @@ export default {
             this.reservations.forEach(async (reservation) => {
 
                 const targetUserIds = reservation.targetUserIds || [];
-                const userMatches = targetUserIds.length === 0 || targetUserIds.includes(this.userInfo.userId);
+                const userMatches = targetUserIds.includes("target_all_users") || targetUserIds.includes(this.userInfo.userId);
                 if(userMatches) {
                     const currentDateTime = new Date(currentTime);
                     const dueDateTime = new Date(reservation.dueDate);
@@ -225,7 +225,7 @@ export default {
                 );
             } else {
                 const targetUserIds = eventData.targetUserIds || [];
-                const userMatches = targetUserIds.length === 0 || targetUserIds.includes(this.userInfo.userId);
+                const userMatches = targetUserIds.includes("target_all_users") || targetUserIds.includes(this.userInfo.userId);
                 if(userMatches) {
                     if (eventData.title && eventData.description) {
                         this.addNotification(eventData);

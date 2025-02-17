@@ -41,9 +41,9 @@ Open a browser to http://localhost:8088/#/
 curl -X POST http://localhost:8088/reservations \
 -H "Content-Type: application/json" \
 -d '{
-    "targetUserIds": [],
+    "targetUserIds": ["target_all_users"],
     "title": "예약 알림",
-    "description": "test",
+    "description": "예약 알림 설명",
     "isNow": false,
     "dueDate": "2025-02-17T14:49:00+09:00"
 }'
@@ -54,9 +54,9 @@ curl -X POST http://localhost:8088/reservations \
 curl -X POST http://localhost:8088/reservations \
 -H "Content-Type: application/json" \
 -d '{
-    "targetUserIds": [],
+    "targetUserIds": ["target_all_users"],
     "title": "실시간 알림",
-    "description": "test",
+    "description": "실시간 알림 설명",
     "isNow": true,
     "dueDate": null
 }'
