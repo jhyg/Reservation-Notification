@@ -26,7 +26,7 @@ public class ReservationController {
 
     @PostMapping("/reservations")
     public Reservation createReservation(@RequestBody Reservation reservation) {
-        if (reservation.isNow()) {
+        if (reservation.isNow() || reservation.getDueDate() == null) {
             // 즉시 알림 발송
             Map<String, Object> notificationData = new HashMap<>();
             notificationData.put("title", reservation.getTitle());
