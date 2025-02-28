@@ -1,5 +1,5 @@
 <template>
-    <div style="margin: 0 -15px 0 -15px;" v-if="editMode">
+    <div v-if="editMode">
         <v-card-title>
             {{label}}
         </v-card-title>

@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div v-if="editMode" style="margin-top:-20px;">
+        <div v-if="editMode">
             <v-textarea v-if="multiLine"
                     :label="label" 
                     v-model="value"
@@ -10,6 +10,8 @@
                     :label="label" 
                     v-model="value"
                     @change="change"
+                    outlined
+                    dense
             />
         </div>
         <div v-else>

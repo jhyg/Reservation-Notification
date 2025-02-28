@@ -15,22 +15,15 @@
         </v-card>
         <v-col style="margin-bottom:40px;">
             <div class="text-center">
-                <v-dialog
-                        v-model="openDialog"
-                        width="332.5"
-                        fullscreen
-                        hide-overlay
-                        transition="dialog-bottom-transition"
-                >
-                    <NotificationNotification :offline="offline" class="video-card" :isNew="true" :editMode="true" v-model="newValue" 
+                <v-dialog v-model="openDialog" width="500">
+                    <NotificationNotification :offline="offline"  :isNew="true" :editMode="true" v-model="newValue" 
                             @add="append" v-if="tick"/>
-
                     <v-btn
-                            style="postition:absolute; top:2%; right:2%"
-                            @click="closeDialog()"
-                            depressed
-                            icon 
-                            absolute
+                        class="gs-close-btn"
+                        @click="closeDialog()"
+                        depressed
+                        icon 
+                        absolute
                     >
                         <v-icon>mdi-close</v-icon>
                     </v-btn>
@@ -68,8 +61,12 @@
                 </v-row>
             </div>
         </v-col>
-        <v-row>
-            <NotificationNotification :offline="offline" class="video-card" v-for="(value, index) in values" v-model="values[index]" v-bind:key="index" @delete="remove"/>
+        <v-row class="ma-0 pa-0">
+            <v-col class="pa-4" cols="12" sm="6" md="3" v-for="(value, index) in values" :key="index">
+                <NotificationNotification :offline="offline"
+                    v-model="values[index]"
+                    @delete="remove"/>
+            </v-col>
         </v-row>
     </div>
 </template>
@@ -107,7 +104,7 @@
                 'notificationId': '',
                 'userId': '',
                 'taskId': '',
-                'dueDate': '2025-02-03',
+                'dueDate': '2025-02-28',
             }
         },
         methods:{
@@ -145,11 +142,5 @@
 
 
 <style>
-    .video-card {
-        width:300px; 
-        margin-left:4.5%; 
-        margin-top:50px; 
-        margin-bottom:50px;
-    }
 </style>
 

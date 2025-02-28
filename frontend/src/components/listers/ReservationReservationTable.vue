@@ -9,13 +9,7 @@
 
         <v-col style="margin-bottom:40px;">
             <div class="text-center">
-                <v-dialog
-                        v-model="openDialog"
-                        width="332.5"
-                        fullscreen
-                        hide-overlay
-                        transition="dialog-bottom-transition"
-                >
+                <v-dialog v-model="openDialog" width="500">
                     <template v-slot:activator="{ on, attrs }">
                         <v-fab-transition>
                             <v-btn
@@ -31,14 +25,14 @@
                         </v-fab-transition>
                     </template>
 
-                    <ReservationReservation :offline="offline" class="video-card" :isNew="true" :editMode="true" v-model="newValue" @add="append" v-if="tick"/>
+                    <ReservationReservation :offline="offline"  :isNew="true" :editMode="true" v-model="newValue" @add="append" v-if="tick"/>
                 
                     <v-btn
-                            style="postition:absolute; top:2%; right:2%"
-                            @click="closeDialog()"
-                            depressed 
-                            icon 
-                            absolute
+                        class="gs-close-btn"
+                        @click="closeDialog()"
+                        depressed 
+                        icon 
+                        absolute
                     >
                         <v-icon>mdi-close</v-icon>
                     </v-btn>
@@ -92,7 +86,7 @@
                 'userId': '',
                 'title': '',
                 'description': '',
-                'dueDate': '2025-02-03',
+                'dueDate': '2025-02-28',
             }
         },
         methods: {
