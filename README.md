@@ -1,6 +1,3 @@
-## Model
-www.msaez.io/#/65217813/storming/registration-alarm
-
 ## Before Running Services
 ### Make sure there is a Kafka server running
 ```
