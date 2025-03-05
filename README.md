@@ -62,3 +62,5 @@ curl -X POST http://localhost:8088/reservations \
 }'
 ```
 
+## PBC 적용 방법
+https://github.com/kyusooK/Cluster-distribute-rule/blob/main/README.md 
