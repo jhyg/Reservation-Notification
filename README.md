@@ -62,8 +62,8 @@ curl -X POST http://localhost:8088/reservations \
 ## PBC 적용 방법
 1. https://github.com/kyusooK/Cluster-distribute-rule/blob/main/README.md 
 
-2. 위 설정 방법을 확인한 후 gateway 에 등록한 backend 명칭으로 ReservationController.java 파일의 기존 2개 api 호출 주소 변경
-    1. gateway 에 backend 명칭을 http://notification:8080 라고 등록한 경우
+2. 위 설정 방법을 확인한 후 gateway에 등록한 backend 명칭으로 ReservationController.java 파일의 기존 2개 api 호출 주소 변경
+    1. root gateway에 backend 명칭을 http://notification:8080 라고 등록한 경우 기존의 http://localhost:8083 을 http://notification:8080 로 변경
     ```
     restTemplate.postForEntity("http://notification:8080/notifications/broadcast", notificationData, Object.class);
     restTemplate.postForEntity("http://notification:8080/notifications/broadcast", notificationData, Object.class);
